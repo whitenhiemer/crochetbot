@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { Canvas } from '@react-three/fiber';
+import React, { useEffect, useState, useRef } from 'react';
+import { Canvas, useThree } from '@react-three/fiber';
 import { OrbitControls, Center, Environment } from '@react-three/drei';
 import * as THREE from 'three';
 import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader.js';
@@ -13,6 +13,45 @@ interface ModelPreviewProps {
   onGenerate: () => void;
   generating: boolean;
 }
+
+const CameraController: React.FC<{ geometry: THREE.BufferGeometry | null }> = ({ geometry }) => {
+  const { camera } = useThree();
+
+  useEffect(() => {
+    if (!geometry) return;
+
+    // Compute bounding box
+    geometry.computeBoundingBox();
+    const boundingBox = geometry.boundingBox;
+
+    if (!boundingBox) return;
+
+    // Get center and size
+    const center = new THREE.Vector3();
+    boundingBox.getCenter(center);
+    const size = new THREE.Vector3();
+    boundingBox.getSize(size);
+
+    // Get the max dimension
+    const maxDim = Math.max(size.x, size.y, size.z);
+
+    // Calculate camera distance (with some padding)
+    const fov = (camera as THREE.PerspectiveCamera).fov * (Math.PI / 180);
+    const cameraDistance = Math.abs(maxDim / Math.sin(fov / 2)) * 1.5;
+
+    // Position camera
+    camera.position.set(
+      center.x + cameraDistance * 0.5,
+      center.y + cameraDistance * 0.5,
+      center.z + cameraDistance
+    );
+
+    camera.lookAt(center);
+    camera.updateProjectionMatrix();
+  }, [geometry, camera]);
+
+  return null;
+};
 
 const Model: React.FC<{ fileUrl: string; fileType: string }> = ({ fileUrl, fileType }) => {
   const [geometry, setGeometry] = useState<THREE.BufferGeometry | null>(null);
@@ -73,11 +112,14 @@ const Model: React.FC<{ fileUrl: string; fileType: string }> = ({ fileUrl, fileT
   }
 
   return (
-    <Center>
-      <mesh geometry={geometry}>
-        <meshStandardMaterial color="#e91e63" />
-      </mesh>
-    </Center>
+    <>
+      <CameraController geometry={geometry} />
+      <Center>
+        <mesh geometry={geometry}>
+          <meshStandardMaterial color="#e91e63" />
+        </mesh>
+      </Center>
+    </>
   );
 };
 
