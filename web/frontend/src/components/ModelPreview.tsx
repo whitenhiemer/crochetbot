@@ -3,6 +3,7 @@ import { Canvas } from '@react-three/fiber';
 import { OrbitControls, Center, Environment } from '@react-three/drei';
 import * as THREE from 'three';
 import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader.js';
+import { STLLoader } from 'three/examples/jsm/loaders/STLLoader.js';
 import { MeshFile } from '../types';
 import './ModelPreview.css';
 
@@ -13,26 +14,59 @@ interface ModelPreviewProps {
   generating: boolean;
 }
 
-const Model: React.FC<{ objUrl: string }> = ({ objUrl }) => {
+const Model: React.FC<{ fileUrl: string; fileType: string }> = ({ fileUrl, fileType }) => {
   const [geometry, setGeometry] = useState<THREE.BufferGeometry | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const loader = new OBJLoader();
-    loader.load(
-      objUrl,
-      (object) => {
-        // Extract geometry from loaded object
-        const mesh = object.children.find((child) => child instanceof THREE.Mesh) as THREE.Mesh;
-        if (mesh && mesh.geometry) {
-          setGeometry(mesh.geometry);
+    setGeometry(null);
+    setError(null);
+
+    if (fileType === 'obj') {
+      const loader = new OBJLoader();
+      loader.load(
+        fileUrl,
+        (object) => {
+          // Extract geometry from loaded object
+          const mesh = object.children.find((child) => child instanceof THREE.Mesh) as THREE.Mesh;
+          if (mesh && mesh.geometry) {
+            setGeometry(mesh.geometry);
+          } else {
+            setError('No mesh found in OBJ file');
+          }
+        },
+        undefined,
+        (error) => {
+          console.error('Error loading OBJ:', error);
+          setError('Failed to load OBJ file');
         }
-      },
-      undefined,
-      (error) => {
-        console.error('Error loading OBJ:', error);
-      }
+      );
+    } else if (fileType === 'stl') {
+      const loader = new STLLoader();
+      loader.load(
+        fileUrl,
+        (geometry) => {
+          setGeometry(geometry);
+        },
+        undefined,
+        (error) => {
+          console.error('Error loading STL:', error);
+          setError('Failed to load STL file');
+        }
+      );
+    }
+  }, [fileUrl, fileType]);
+
+  if (error) {
+    return (
+      <Center>
+        <mesh>
+          <boxGeometry args={[1, 1, 1]} />
+          <meshStandardMaterial color="#ff0000" />
+        </mesh>
+      </Center>
     );
-  }, [objUrl]);
+  }
 
   if (!geometry) {
     return null;
@@ -53,12 +87,17 @@ export const ModelPreview: React.FC<ModelPreviewProps> = ({
   onGenerate,
   generating,
 }) => {
-  const [objUrl, setObjUrl] = useState<string | null>(null);
+  const [fileUrl, setFileUrl] = useState<string | null>(null);
+  const [fileType, setFileType] = useState<string>('');
 
   useEffect(() => {
     // Create object URL for the file
     const url = URL.createObjectURL(file);
-    setObjUrl(url);
+    setFileUrl(url);
+
+    // Determine file type from extension
+    const extension = file.name.split('.').pop()?.toLowerCase() || '';
+    setFileType(extension);
 
     // Cleanup
     return () => {
@@ -72,11 +111,11 @@ export const ModelPreview: React.FC<ModelPreviewProps> = ({
 
       <div className="preview-card">
         <div className="canvas-container">
-          {objUrl ? (
+          {fileUrl && fileType ? (
             <Canvas camera={{ position: [2, 2, 2], fov: 50 }}>
               <ambientLight intensity={0.5} />
               <directionalLight position={[10, 10, 5]} intensity={1} />
-              <Model objUrl={objUrl} />
+              <Model fileUrl={fileUrl} fileType={fileType} />
               <OrbitControls enablePan={true} enableZoom={true} enableRotate={true} />
               <Environment preset="studio" />
             </Canvas>
