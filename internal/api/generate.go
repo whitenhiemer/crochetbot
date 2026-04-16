@@ -64,8 +64,7 @@ func handleGenerateRequest(w http.ResponseWriter, r *http.Request) {
 	case ".obj":
 		m, err = mesh.LoadOBJ(filePath)
 	case ".stl":
-		respondGenerateError(w, http.StatusNotImplemented, "STL files not yet supported")
-		return
+		m, err = mesh.LoadSTL(filePath)
 	default:
 		respondGenerateError(w, http.StatusBadRequest, "Unsupported file format")
 		return

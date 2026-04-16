@@ -20,7 +20,7 @@ const (
 
 var allowedExtensions = map[string]bool{
 	".obj": true,
-	// ".stl": true, // TODO: Implement STL parser
+	".stl": true,
 }
 
 type UploadResponse struct {
