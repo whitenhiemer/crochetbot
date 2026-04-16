@@ -528,7 +528,7 @@ For production, set `REACT_APP_API_URL` to production backend URL.
 - No loading indicator during generate
 
 ### Workarounds
-- File size limit (10MB)
+- File size limit (50MB)
 - Simplified models recommended
 - Desktop recommended for 3D preview
 

@@ -61,7 +61,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onFileSelected, loading 
               <p>Drag and drop a 3D model file here</p>
               <p className="or-text">or</p>
               <button className="browse-button">Browse Files</button>
-              <p className="file-types">Supported: .obj, .stl (max 10MB)</p>
+              <p className="file-types">Supported: .obj, .stl (max 50MB)</p>
             </>
           )}
         </div>

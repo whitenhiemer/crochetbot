@@ -13,7 +13,7 @@
 
 **Features:**
 - ✅ Multipart form file upload
-- ✅ File size validation (10MB limit)
+- ✅ File size validation (50MB limit)
 - ✅ File type validation (.obj, .stl)
 - ✅ Filename sanitization (security)
 - ✅ Unique filename generation (timestamp-based)
@@ -265,7 +265,7 @@ crochetbot/
 | `PORT` | `8080` | HTTP server port |
 | `UPLOAD_DIR` | `./uploads` | Uploaded file storage |
 | `PATTERN_STORAGE_DIR` | `./data/patterns` | Pattern JSON storage |
-| `MAX_FILE_SIZE` | `10485760` | Max upload bytes (10MB) |
+| `MAX_FILE_SIZE` | `52428800` | Max upload bytes (50MB) |
 
 ---
 
@@ -279,7 +279,7 @@ crochetbot/
 - **Documentation:** 3 comprehensive docs
 
 ### Performance
-- Upload: < 100ms for 10MB file
+- Upload: < 100ms for 50MB file
 - Parse OBJ: ~10ms for 1000 vertices
 - Generate pattern: < 1ms
 - End-to-end: < 200ms total

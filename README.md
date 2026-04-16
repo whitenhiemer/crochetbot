@@ -57,7 +57,7 @@ Frontend runs on http://localhost:3000
 ```bash
 PORT=8080
 UPLOAD_DIR=./uploads
-MAX_FILE_SIZE=10485760  # 10MB
+MAX_FILE_SIZE=52428800  # 50MB
 ```
 
 ## API Endpoints

@@ -40,7 +40,7 @@ Upload a 3D model file (.obj or .stl) for pattern generation.
 - `.stl` (STL - not yet implemented)
 
 **Constraints:**
-- Maximum file size: 10 MB
+- Maximum file size: 50 MB
 - Only one file per request
 
 **Success Response (200):**
@@ -417,7 +417,7 @@ curl http://localhost:8080/api/pattern/YOUR_PATTERN_ID_HERE
 | `PORT` | `8080` | Server port |
 | `UPLOAD_DIR` | `./uploads` | Directory for uploaded files |
 | `PATTERN_STORAGE_DIR` | `./data/patterns` | Directory for pattern JSON files |
-| `MAX_FILE_SIZE` | `10485760` | Max upload size in bytes (10MB) |
+| `MAX_FILE_SIZE` | `52428800` | Max upload size in bytes (50MB) |
 
 ---
 

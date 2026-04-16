@@ -68,7 +68,7 @@ Your browser should automatically open to http://localhost:3000
 - .obj (Wavefront OBJ) ✅
 - .stl (STL) - coming soon
 
-**File size limit:** 10 MB
+**File size limit:** 50 MB
 
 ### Step 2: Preview Model
 
@@ -224,7 +224,7 @@ Create `.env` file in project root:
 PORT=8080
 UPLOAD_DIR=./uploads
 PATTERN_STORAGE_DIR=./data/patterns
-MAX_FILE_SIZE=10485760
+MAX_FILE_SIZE=52428800
 ```
 
 ### Frontend Environment Variables
@@ -316,7 +316,7 @@ npm install
 **Problem:** File too large
 
 **Solution:**
-- Max file size is 10MB
+- Max file size is 50MB
 - Simplify your 3D model
 - Or increase `MAX_FILE_SIZE` env var
 
