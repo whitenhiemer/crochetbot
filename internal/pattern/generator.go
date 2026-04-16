@@ -108,23 +108,26 @@ func (g *Generator) analyzeShape(m *mesh.Mesh) string {
 		return "cylinder"
 	}
 
-	// Check if it's a vertical/standing shape
+	// Check if it's an elongated shape (any dimension significantly larger than others)
 	width, height, depth := m.GetDimensions()
 
-	// If height is significantly larger than both width and depth, treat as cylinder
-	// (vertical amigurumi like standing animals)
-	heightToWidth := height / width
-	heightToDepth := height / depth
+	// Get all three dimensions and find largest vs smallest
+	dims := []float64{width, height, depth}
+	maxDim := width
+	minDim := width
 
-	if (heightToWidth > 1.3 || heightToDepth > 1.3) {
-		return "cylinder"
+	for _, d := range dims {
+		if d > maxDim {
+			maxDim = d
+		}
+		if d < minDim {
+			minDim = d
+		}
 	}
 
-	// If depth is significantly larger (forward-facing), also cylinder
-	depthToWidth := depth / width
-	depthToHeight := depth / height
-
-	if (depthToWidth > 1.3 || depthToHeight > 1.3) {
+	// If one dimension is significantly larger than the smallest (elongated shape)
+	// treat as cylinder for better detail
+	if minDim > 0 && maxDim/minDim > 1.15 {
 		return "cylinder"
 	}
 

@@ -17,6 +17,13 @@ test-coverage:
 	go test -v -coverprofile=coverage.out ./...
 	go tool cover -html=coverage.out
 
+# Run integration tests (requires test STL files)
+test-integration:
+	go test -v -tags=integration ./internal/pattern/
+
+# Run all tests
+test-all: test test-integration
+
 # Clean build artifacts
 clean:
 	rm -rf bin/
