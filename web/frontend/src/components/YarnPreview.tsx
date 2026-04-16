@@ -75,16 +75,29 @@ const YarnMesh: React.FC<{ pattern: Pattern; yarnColor: string }> = ({
 
   return (
     <Center>
-      <mesh geometry={geometry}>
-        <meshStandardMaterial
-          map={texture}
-          color={yarnColor}
-          roughness={0.8}
-          metalness={0.1}
-          bumpMap={texture}
-          bumpScale={0.02}
-        />
-      </mesh>
+      <group>
+        {/* Main mesh with yarn texture */}
+        <mesh geometry={geometry}>
+          <meshStandardMaterial
+            map={texture}
+            color={yarnColor}
+            roughness={0.7}
+            metalness={0.05}
+            bumpMap={texture}
+            bumpScale={0.03}
+            flatShading={false}
+          />
+        </mesh>
+        {/* Subtle wireframe overlay to show stitch structure */}
+        <mesh geometry={geometry}>
+          <meshBasicMaterial
+            color="#000000"
+            wireframe={true}
+            opacity={0.15}
+            transparent={true}
+          />
+        </mesh>
+      </group>
     </Center>
   );
 };
@@ -128,13 +141,20 @@ export const YarnPreview: React.FC<YarnPreviewProps> = ({
       </div>
 
       <div className="yarn-canvas-container">
-        <Canvas camera={{ position: [1.5, 1.5, 1.5], fov: 50 }}>
-          <ambientLight intensity={0.6} />
-          <directionalLight position={[10, 10, 5]} intensity={0.8} />
-          <spotLight position={[-10, 10, -5]} intensity={0.3} />
+        <Canvas camera={{ position: [2, 1.5, 2], fov: 45 }}>
+          <ambientLight intensity={0.5} />
+          <directionalLight position={[5, 10, 5]} intensity={1.2} castShadow />
+          <directionalLight position={[-5, 5, -5]} intensity={0.4} />
+          <pointLight position={[0, -5, 0]} intensity={0.3} />
           <YarnMesh pattern={pattern} yarnColor={selectedColor} />
-          <OrbitControls enablePan={true} enableZoom={true} enableRotate={true} />
-          <Environment preset="apartment" />
+          <OrbitControls
+            enablePan={true}
+            enableZoom={true}
+            enableRotate={true}
+            autoRotate={true}
+            autoRotateSpeed={1}
+          />
+          <Environment preset="city" />
         </Canvas>
       </div>
 

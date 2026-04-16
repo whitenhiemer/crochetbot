@@ -14,6 +14,7 @@ type Pattern struct {
 	Assembly         []string       `json:"assembly_instructions"`
 	FinishedSize     FinishedSize   `json:"finished_size"`
 	AccuracyMetrics  AccuracyMetrics `json:"accuracy_metrics"`
+	VisualizationProfile []float64   `json:"visualization_profile,omitempty"` // Raw mesh radius profile for accurate 3D rendering
 }
 
 // AccuracyMetrics shows how well the pattern matches the original model

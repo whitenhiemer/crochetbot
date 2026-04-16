@@ -140,6 +140,60 @@ func (m *Mesh) EstimateVolume() float64 {
 	return math.Abs(volume) / 6.0
 }
 
+// ReorientToLongestAxis rotates the mesh so the longest dimension is along Y-axis (height)
+// This ensures optimal pattern generation with maximum detail along the main axis
+func (m *Mesh) ReorientToLongestAxis() {
+	width, height, depth := m.GetDimensions()
+
+	// Determine which axis is longest
+	var rotationType string
+	maxDim := width
+	longestAxis := "X"
+
+	if height > maxDim {
+		maxDim = height
+		longestAxis = "Y"
+	}
+	if depth > maxDim {
+		maxDim = depth
+		longestAxis = "Z"
+	}
+
+	// If Y is already longest, no rotation needed
+	if longestAxis == "Y" {
+		return
+	}
+
+	// Determine rotation needed
+	if longestAxis == "X" {
+		rotationType = "X_to_Y" // Rotate 90° around Z axis
+	} else { // longestAxis == "Z"
+		rotationType = "Z_to_Y" // Rotate 90° around X axis
+	}
+
+	// Apply rotation to all vertices
+	for i := range m.Vertices {
+		v := &m.Vertices[i]
+		switch rotationType {
+		case "X_to_Y":
+			// Rotate around Z: (x,y,z) -> (-y,x,z)
+			newX := -v.Y
+			newY := v.X
+			v.X = newX
+			v.Y = newY
+		case "Z_to_Y":
+			// Rotate around X: (x,y,z) -> (x,-z,y)
+			newY := v.Z
+			newZ := -v.Y
+			v.Y = newY
+			v.Z = newZ
+		}
+	}
+
+	// Recalculate bounds after rotation
+	m.CalculateBounds()
+}
+
 // GetRadiusProfile calculates average radius at different heights
 // Returns slice of radii from bottom to top
 func (m *Mesh) GetRadiusProfile(numSlices int) []float64 {

@@ -33,6 +33,7 @@ export interface Pattern {
   assembly_instructions: string[];
   finished_size: FinishedSize;
   accuracy_metrics: AccuracyMetrics;
+  visualization_profile?: number[]; // Raw mesh radius profile (0-1) for accurate rendering
 }
 
 export interface FinishedSize {

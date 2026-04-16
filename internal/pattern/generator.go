@@ -96,6 +96,23 @@ func (g *Generator) Generate(m *mesh.Mesh) (*models.Pattern, error) {
 	// Calculate accuracy metrics
 	pattern.AccuracyMetrics = g.calculateAccuracy(m, pattern)
 
+	// Add high-resolution visualization profile (unsmoothed, for accurate 3D rendering)
+	vizSlices := 200 // High resolution for smooth visualization
+	vizProfile := m.GetRadiusProfile(vizSlices)
+	// Normalize to 0-1 range
+	maxRadius := 0.0
+	for _, r := range vizProfile {
+		if r > maxRadius {
+			maxRadius = r
+		}
+	}
+	if maxRadius > 0 {
+		for i := range vizProfile {
+			vizProfile[i] = vizProfile[i] / maxRadius
+		}
+	}
+	pattern.VisualizationProfile = vizProfile
+
 	return pattern, nil
 }
 
@@ -296,17 +313,46 @@ func (g *Generator) generateCylinderPart(m *mesh.Mesh) models.Part {
 		length = height
 	}
 
-	// Calculate target number of rounds (higher resolution for better detail)
-	lengthRounds := int(length * 5) // 5 rounds per unit of length for more detail
-	if lengthRounds < 20 {
-		lengthRounds = 20
+	// Calculate target number of rounds
+	// Maximum detail: 200 rounds/unit for extreme shape definition
+	lengthRounds := int(length * 200)
+	fmt.Printf("DEBUG: length=%.2f, initial lengthRounds=%d\n", length, lengthRounds)
+	if lengthRounds < 2000 {
+		lengthRounds = 2000
 	}
-	if lengthRounds > 80 {
-		lengthRounds = 80
+	if lengthRounds > 10000 {
+		lengthRounds = 10000
 	}
+	fmt.Printf("DEBUG: final lengthRounds=%d\n", lengthRounds)
 
-	// Get radius profile at different heights
-	radiusProfile := m.GetRadiusProfile(lengthRounds)
+	// Get radius profile - sample at high resolution
+	profileSlices := lengthRounds // Sample at full resolution for maximum detail
+	if profileSlices < 1000 {
+		profileSlices = 1000
+	}
+	if profileSlices > 5000 {
+		profileSlices = 5000
+	}
+	radiusProfile := m.GetRadiusProfile(profileSlices)
+
+	// Interpolate to match round count
+	if len(radiusProfile) != lengthRounds {
+		interpolated := make([]float64, lengthRounds)
+		for i := 0; i < lengthRounds; i++ {
+			// Map round index to profile index
+			profilePos := float64(i) * float64(len(radiusProfile)-1) / float64(lengthRounds-1)
+			profileIdx := int(profilePos)
+			fraction := profilePos - float64(profileIdx)
+
+			if profileIdx >= len(radiusProfile)-1 {
+				interpolated[i] = radiusProfile[len(radiusProfile)-1]
+			} else {
+				// Linear interpolation
+				interpolated[i] = radiusProfile[profileIdx]*(1-fraction) + radiusProfile[profileIdx+1]*fraction
+			}
+		}
+		radiusProfile = interpolated
+	}
 	if len(radiusProfile) == 0 {
 		// Fallback to constant diameter
 		diameter := (width + depth) / 2
@@ -326,51 +372,89 @@ func (g *Generator) generateCylinderPart(m *mesh.Mesh) models.Part {
 
 	// Convert radii to stitch counts
 	rawStitchProfile := make([]int, len(radiusProfile))
-	maxStitches := int(maxRadius * 10) // 10 stitches per unit radius
-	if maxStitches < 12 {
-		maxStitches = 12
+	maxStitches := int(maxRadius * 30) // 30 stitches per unit radius for extreme detail
+	if maxStitches < 48 {
+		maxStitches = 48
 	}
-	if maxStitches > 72 {
-		maxStitches = 72
+	if maxStitches > 300 {
+		maxStitches = 300
 	}
-	maxStitches = ((maxStitches + 5) / 6) * 6 // Round to multiple of 6
 
 	for i, radius := range radiusProfile {
 		stitches := int((radius / maxRadius) * float64(maxStitches))
-		// Round to multiple of 6 and enforce minimum
-		stitches = ((stitches + 5) / 6) * 6
+		// Enforce minimum only (don't round to 6 - kills detail)
 		if stitches < 6 {
 			stitches = 6
 		}
 		rawStitchProfile[i] = stitches
 	}
 
-	// Smooth the profile to ensure gradual increases/decreases
-	// With more rounds, we can use smaller increments for better detail
+	// Multi-pass smoothing: gradually converge to target while maintaining crochet constraints
 	stitchProfile := make([]int, len(rawStitchProfile))
 	stitchProfile[0] = 6 // Start with magic ring
 
+	// Pass 1: Extreme aggressive smoothing - follow mesh shape closely with very fast transitions
 	for i := 1; i < len(rawStitchProfile); i++ {
 		targetStitches := rawStitchProfile[i]
 		prevStitches := stitchProfile[i-1]
 
 		diff := targetStitches - prevStitches
-		maxChange := 6 // Smaller increments for finer detail
+
+		// Extreme: allow up to 80% change per round for maximum visible detail
+		maxChange := int(float64(prevStitches) * 0.80) // 80% change per round
+		if maxChange < 20 {
+			maxChange = 20
+		}
+		if maxChange > 100 {
+			maxChange = 100 // Allow huge jumps for dramatic shape changes
+		}
 
 		if diff > maxChange {
-			// Limit increase
 			stitchProfile[i] = prevStitches + maxChange
 		} else if diff < -maxChange {
-			// Limit decrease
 			stitchProfile[i] = prevStitches - maxChange
 		} else {
 			stitchProfile[i] = targetStitches
 		}
 
-		// Ensure multiple of 6
-		stitchProfile[i] = ((stitchProfile[i] + 5) / 6) * 6
+		// Ensure minimum stitch count (don't force multiple of 6 - kills detail)
 		if stitchProfile[i] < 6 {
 			stitchProfile[i] = 6
+		}
+	}
+
+	// Pass 2: Enhance peaks and valleys (reduced to preserve shape variation)
+	// Work backwards to ensure we reach high points
+	for pass := 0; pass < 1; pass++ { // Reduced from 3 to 1 pass
+		for i := len(stitchProfile) - 2; i >= 0; i-- {
+			targetStitches := rawStitchProfile[i]
+			currentStitches := stitchProfile[i]
+			nextStitches := stitchProfile[i+1]
+
+			// If we're too far from target and next round allows it, adjust
+			diff := targetStitches - currentStitches
+			if diff > 6 && nextStitches-currentStitches < 6 {
+				// Try to get closer to target
+				adjustment := 6
+				if adjustment > diff {
+					adjustment = diff
+				}
+				newStitches := currentStitches + adjustment
+				newStitches = ((newStitches + 5) / 6) * 6
+				if newStitches >= 6 && nextStitches-newStitches >= -6 && newStitches-stitchProfile[i-1] <= 6 {
+					stitchProfile[i] = newStitches
+				}
+			} else if diff < -6 && currentStitches-nextStitches < 6 {
+				adjustment := -6
+				if adjustment < diff {
+					adjustment = diff
+				}
+				newStitches := currentStitches + adjustment
+				newStitches = ((newStitches + 5) / 6) * 6
+				if newStitches >= 6 && newStitches-nextStitches >= -6 && stitchProfile[i-1]-newStitches <= 6 {
+					stitchProfile[i] = newStitches
+				}
+			}
 		}
 	}
 
@@ -390,6 +474,17 @@ func (g *Generator) generateCylinderPart(m *mesh.Mesh) models.Part {
 	currentStitches := 6
 	roundNum := 2
 	stuffingStarted := false
+
+	fmt.Printf("DEBUG: stitchProfile length=%d\n", len(stitchProfile))
+
+	// Count unique transitions for debug
+	transitions := 0
+	for i := range stitchProfile {
+		if i == 0 || stitchProfile[i] != stitchProfile[i-1] {
+			transitions++
+		}
+	}
+	fmt.Printf("DEBUG: unique transitions=%d\n", transitions)
 
 	for i, targetStitches := range stitchProfile {
 		if targetStitches == currentStitches {

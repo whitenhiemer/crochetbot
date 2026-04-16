@@ -75,6 +75,10 @@ func handleGenerateRequest(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Reorient mesh so longest dimension is height (for optimal pattern generation)
+	m.CalculateBounds()
+	m.ReorientToLongestAxis()
+
 	// Generate pattern
 	gen := pattern.NewGenerator()
 	pat, err := gen.Generate(m)
