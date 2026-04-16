@@ -159,6 +159,7 @@ export class CrochetMeshGenerator {
     const indices: number[] = [];
     const normals: number[] = [];
     const uvs: number[] = [];
+    const vertexCounts: number[] = [];
 
     // Calculate total height based on number of rounds
     const totalRounds = rounds.length;
@@ -186,24 +187,43 @@ export class CrochetMeshGenerator {
       const maxStitches = Math.max(...rounds.map(r => r.stitch_count));
       const normalizedHeight = (roundIdx + 1) / totalRounds;
 
-      // Amplify stitch count differences for visible shape
+      // Stuffed sphere: fabric stretches and rounds out
       const stitchRatio = stitchCount / maxStitches;
-      const amplifiedRatio = 0.3 + (stitchRatio * 0.7); // Map 0-1 to 0.3-1.0
-      let radius = amplifiedRatio * 0.6;
+      const stuffingFactor = 1.2; // 20% inflation from stuffing
 
-      // Add slight variation for hand-crocheted look
-      const bumpiness = 0.05;
+      // Light smoothing for stuffed appearance while preserving detail
+      const smoothingWindow = 1;
+      let avgRatio = stitchRatio;
+      if (roundIdx >= smoothingWindow && roundIdx < rounds.length - smoothingWindow) {
+        let sum = 0;
+        let count = 0;
+        for (let j = -smoothingWindow; j <= smoothingWindow; j++) {
+          if (roundIdx + j >= 0 && roundIdx + j < rounds.length) {
+            sum += (rounds[roundIdx + j].stitch_count / maxStitches);
+            count++;
+          }
+        }
+        avgRatio = sum / count;
+      }
+
+      let radius = avgRatio * stuffingFactor * 0.85;
+
+      // Minimal texture - stuffed pieces are smooth
+      const bumpiness = 0.01;
+
+      // High vertex count for smooth appearance
+      const verticesThisRound = Math.max(64, stitchCount * 4);
 
       // Create vertices around this round
-      for (let i = 0; i < stitchCount; i++) {
-        const angle = (i / stitchCount) * Math.PI * 2;
+      for (let i = 0; i < verticesThisRound; i++) {
+        const angle = (i / verticesThisRound) * Math.PI * 2;
 
-        // Add slight irregularity to simulate hand-crocheted texture
-        const radiusVariation = radius + Math.sin(i * 2.5) * bumpiness;
+        // Very subtle texture
+        const radiusVariation = radius + Math.sin(i * 6.3) * bumpiness;
 
         const x = Math.cos(angle) * radiusVariation;
         const z = Math.sin(angle) * radiusVariation;
-        const y = yPos + Math.sin(i * 3) * bumpiness * 0.5; // Slight height variation
+        const y = yPos;
 
         vertices.push(x, y, z);
 
@@ -215,12 +235,19 @@ export class CrochetMeshGenerator {
         uvs.push(i / stitchCount, 1 - normalizedHeight);
       }
 
+      // Track vertex counts per round
+      if (roundIdx === 0) {
+        vertexCounts.push(verticesThisRound);
+      } else {
+        vertexCounts.push(verticesThisRound);
+      }
+
       // Create faces connecting to previous round
       if (roundIdx === 0) {
         // Connect first round to center point
         const currentRoundStart = 1;
-        for (let i = 0; i < stitchCount; i++) {
-          const next = (i + 1) % stitchCount;
+        for (let i = 0; i < verticesThisRound; i++) {
+          const next = (i + 1) % verticesThisRound;
           indices.push(
             0, // Center point
             currentRoundStart + next,
@@ -229,45 +256,43 @@ export class CrochetMeshGenerator {
         }
       } else {
         // Connect this round to previous round
-        const prevRound = rounds[roundIdx - 1];
-        const prevStitchCount = prevRound.stitch_count;
-        const prevRoundStart = vertexIndex - prevStitchCount;
+        const prevVertexCount = vertexCounts[roundIdx - 1];
+        const currVertexCount = verticesThisRound;
+        const prevRoundStart = vertexIndex - prevVertexCount;
         const currentRoundStart = vertexIndex;
 
-        // Create faces between rounds
-        // Handle different stitch counts (increases/decreases)
-        const ratio = stitchCount / prevStitchCount;
+        // Create faces between rounds with different vertex counts
+        const ratio = currVertexCount / prevVertexCount;
 
         if (ratio >= 1) {
-          // Increasing or same (each prev stitch connects to one or more current stitches)
-          for (let i = 0; i < prevStitchCount; i++) {
+          // Increasing or same
+          for (let i = 0; i < prevVertexCount; i++) {
             const prevIdx = prevRoundStart + i;
-            const prevNext = prevRoundStart + ((i + 1) % prevStitchCount);
+            const prevNext = prevRoundStart + ((i + 1) % prevVertexCount);
 
             const currStart = Math.floor(i * ratio);
             const currEnd = Math.floor((i + 1) * ratio);
 
             for (let j = currStart; j < currEnd; j++) {
-              const currIdx = currentRoundStart + (j % stitchCount);
-              const currNext = currentRoundStart + ((j + 1) % stitchCount);
+              const currIdx = currentRoundStart + (j % currVertexCount);
+              const currNext = currentRoundStart + ((j + 1) % currVertexCount);
 
-              // Create quad as two triangles
               indices.push(prevIdx, currNext, currIdx);
               indices.push(prevIdx, prevNext, currNext);
             }
           }
         } else {
-          // Decreasing (multiple prev stitches to one current stitch)
-          for (let i = 0; i < stitchCount; i++) {
+          // Decreasing
+          for (let i = 0; i < currVertexCount; i++) {
             const currIdx = currentRoundStart + i;
-            const currNext = currentRoundStart + ((i + 1) % stitchCount);
+            const currNext = currentRoundStart + ((i + 1) % currVertexCount);
 
             const prevStart = Math.floor(i / ratio);
             const prevEnd = Math.floor((i + 1) / ratio);
 
-            for (let j = prevStart; j <= prevEnd && j < prevStitchCount; j++) {
-              const prevIdx = prevRoundStart + (j % prevStitchCount);
-              const prevNext = prevRoundStart + ((j + 1) % prevStitchCount);
+            for (let j = prevStart; j <= prevEnd && j < prevVertexCount; j++) {
+              const prevIdx = prevRoundStart + (j % prevVertexCount);
+              const prevNext = prevRoundStart + ((j + 1) % prevVertexCount);
 
               indices.push(prevIdx, currNext, currIdx);
               if (j < prevEnd) {
@@ -278,13 +303,13 @@ export class CrochetMeshGenerator {
         }
       }
 
-      vertexIndex += stitchCount;
+      vertexIndex += verticesThisRound;
     }
 
-    // Add bottom center point if last round has stitches
-    const lastRound = rounds[rounds.length - 1];
-    if (lastRound.stitch_count > 0) {
-      const lastRoundStart = vertexIndex - lastRound.stitch_count;
+    // Add bottom center point if last round has vertices
+    if (vertexCounts.length > 0) {
+      const lastVertexCount = vertexCounts[vertexCounts.length - 1];
+      const lastRoundStart = vertexIndex - lastVertexCount;
 
       vertices.push(0, -0.5, 0);
       normals.push(0, -1, 0);
@@ -293,8 +318,8 @@ export class CrochetMeshGenerator {
       const bottomIdx = vertexIndex;
 
       // Connect last round to bottom center
-      for (let i = 0; i < lastRound.stitch_count; i++) {
-        const next = (i + 1) % lastRound.stitch_count;
+      for (let i = 0; i < lastVertexCount; i++) {
+        const next = (i + 1) % lastVertexCount;
         indices.push(
           bottomIdx,
           lastRoundStart + i,
@@ -357,32 +382,50 @@ export class CrochetMeshGenerator {
       const yPos = -halfHeight + (roundIdx / (rounds.length - 1)) * totalHeight;
 
       // Calculate radius at this round based on stitch count
-      // Amplify the stitch count differences to make shape variation more visible
+      // Stuffed amigurumi: fabric stretches and rounds out, making it fuller than unstuffed
       const stitchRatio = stitchCount / maxStitches;
-      const amplifiedRatio = 0.3 + (stitchRatio * 0.7); // Map 0-1 to 0.3-1.0 (ensure minimum width)
-      let radius = amplifiedRatio * 0.6; // Slightly larger base radius
 
-      // Add slight variation for hand-crocheted look
-      const bumpiness = 0.04;
+      // Apply stuffing effect: smaller stitch counts get more inflated when stuffed
+      // This creates rounder, more organic shapes
+      const stuffingFactor = 1.15; // 15% inflation from stuffing
+      const baseRadius = stitchRatio * stuffingFactor;
 
-      // Create more vertices than stitches for smoother appearance
-      // Use at least 48 vertices per round for very smooth circles
-      const minVertices = 48;
-      const verticesThisRound = Math.max(minVertices, stitchCount * 3);
+      // Light smoothing - preserve detail while showing stuffed roundness
+      const smoothingWindow = 1;
+      let avgRatio = baseRadius;
+      if (roundIdx >= smoothingWindow && roundIdx < rounds.length - smoothingWindow) {
+        let sum = 0;
+        let count = 0;
+        for (let j = -smoothingWindow; j <= smoothingWindow; j++) {
+          if (roundIdx + j >= 0 && roundIdx + j < rounds.length) {
+            sum += (rounds[roundIdx + j].stitch_count / maxStitches);
+            count++;
+          }
+        }
+        avgRatio = (sum / count) * stuffingFactor;
+      }
+
+      let radius = avgRatio * 0.9;
+
+      // Subtle texture only
+      const bumpiness = 0.02;
+
+      // High vertex count for smooth stuffed appearance
+      const minVertices = 64;
+      const verticesThisRound = Math.max(minVertices, stitchCount * 4);
 
       // Create vertices around this round
       for (let i = 0; i < verticesThisRound; i++) {
         const angle = (i / verticesThisRound) * Math.PI * 2;
 
-        // Add slight bumps at stitch positions
-        const stitchAngle = (Math.floor((i / verticesThisRound) * stitchCount) / stitchCount) * Math.PI * 2;
-        const stitchBump = Math.sin((angle - stitchAngle) * stitchCount) * bumpiness * 0.5;
+        // Very subtle texture - stuffed pieces are smooth
+        const textureNoise = Math.sin(i * 5.7) * bumpiness;
 
-        const radiusVariation = radius + stitchBump;
+        const radiusVariation = radius + textureNoise;
 
         const x = Math.cos(angle) * radiusVariation;
         const z = Math.sin(angle) * radiusVariation;
-        const y = yPos + Math.sin(i * 3) * bumpiness * 0.3;
+        const y = yPos;
 
         vertices.push(x, y, z);
 

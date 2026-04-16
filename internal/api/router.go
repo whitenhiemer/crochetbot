@@ -13,10 +13,16 @@ func NewRouter() http.Handler {
 	// Health check
 	mux.HandleFunc("/health", handleHealth)
 
-	// API routes
+	// API routes - Upload and generation
 	mux.HandleFunc("/api/upload", handleUpload)
 	mux.HandleFunc("/api/generate", handleGenerate)
 	mux.HandleFunc("/api/pattern/", handleGetPattern)
+
+	// API routes - Pattern operations
+	mux.HandleFunc("/api/pattern/parse", handleParsePattern)
+	mux.HandleFunc("/api/pattern/format", handleFormatPattern)
+	mux.HandleFunc("/api/pattern/validate", handleValidatePattern)
+	mux.HandleFunc("/api/pattern/compare", handleComparePatterns)
 
 	// CORS middleware wrapper
 	return enableCORS(mux)
