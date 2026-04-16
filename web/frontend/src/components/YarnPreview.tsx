@@ -2,39 +2,28 @@ import React, { useEffect, useState } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls, Center, Environment } from '@react-three/drei';
 import * as THREE from 'three';
-import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader.js';
-import { STLLoader } from 'three/examples/jsm/loaders/STLLoader.js';
+import { Pattern } from '../types';
+import { CrochetMeshGenerator } from './CrochetMeshGenerator';
 import './YarnPreview.css';
 
 interface YarnPreviewProps {
-  fileUrl: string;
-  fileType: string;
+  pattern: Pattern;
   yarnColor?: string;
 }
 
-const YarnMesh: React.FC<{ fileUrl: string; fileType: string; yarnColor: string }> = ({
-  fileUrl,
-  fileType,
+const YarnMesh: React.FC<{ pattern: Pattern; yarnColor: string }> = ({
+  pattern,
   yarnColor
 }) => {
   const [geometry, setGeometry] = useState<THREE.BufferGeometry | null>(null);
 
   useEffect(() => {
-    if (fileType === 'obj') {
-      const loader = new OBJLoader();
-      loader.load(fileUrl, (object) => {
-        const mesh = object.children.find((child) => child instanceof THREE.Mesh) as THREE.Mesh;
-        if (mesh && mesh.geometry) {
-          setGeometry(mesh.geometry);
-        }
-      });
-    } else if (fileType === 'stl') {
-      const loader = new STLLoader();
-      loader.load(fileUrl, (geometry) => {
-        setGeometry(geometry);
-      });
+    // Generate crocheted mesh from pattern
+    const crochetGeometry = CrochetMeshGenerator.generateFromPattern(pattern);
+    if (crochetGeometry) {
+      setGeometry(crochetGeometry);
     }
-  }, [fileUrl, fileType]);
+  }, [pattern]);
 
   if (!geometry) {
     return null;
@@ -111,8 +100,7 @@ function adjustBrightness(color: string, amount: number): string {
 }
 
 export const YarnPreview: React.FC<YarnPreviewProps> = ({
-  fileUrl,
-  fileType,
+  pattern,
   yarnColor = '#e91e63'
 }) => {
   const [selectedColor, setSelectedColor] = useState(yarnColor);
@@ -135,16 +123,16 @@ export const YarnPreview: React.FC<YarnPreviewProps> = ({
   return (
     <div className="yarn-preview-container">
       <div className="yarn-preview-header">
-        <h3>Yarn Preview</h3>
-        <p>See how your pattern might look in yarn</p>
+        <h3>Crocheted Preview</h3>
+        <p>See how your crocheted pattern will look with visible rounds and stitches</p>
       </div>
 
       <div className="yarn-canvas-container">
-        <Canvas camera={{ position: [2, 2, 2], fov: 50 }}>
+        <Canvas camera={{ position: [1.5, 1.5, 1.5], fov: 50 }}>
           <ambientLight intensity={0.6} />
           <directionalLight position={[10, 10, 5]} intensity={0.8} />
           <spotLight position={[-10, 10, -5]} intensity={0.3} />
-          <YarnMesh fileUrl={fileUrl} fileType={fileType} yarnColor={selectedColor} />
+          <YarnMesh pattern={pattern} yarnColor={selectedColor} />
           <OrbitControls enablePan={true} enableZoom={true} enableRotate={true} />
           <Environment preset="apartment" />
         </Canvas>
@@ -168,7 +156,8 @@ export const YarnPreview: React.FC<YarnPreviewProps> = ({
 
       <div className="preview-note">
         <p>
-          <strong>Note:</strong> This is an approximation. Actual crocheted result may vary based on
+          <strong>Note:</strong> This preview shows the crocheted topology based on your pattern rounds.
+          Each visible ring represents a round from your pattern. Actual result may vary based on
           yarn weight, hook size, tension, and skill level.
         </p>
       </div>

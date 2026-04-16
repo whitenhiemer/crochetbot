@@ -10,18 +10,6 @@ interface PatternDisplayProps {
 }
 
 export const PatternDisplay: React.FC<PatternDisplayProps> = ({ pattern, file, onReset }) => {
-  const [fileUrl, setFileUrl] = useState<string>('');
-  const [fileType, setFileType] = useState<string>('');
-
-  useEffect(() => {
-    const url = URL.createObjectURL(file);
-    setFileUrl(url);
-    setFileType(file.name.split('.').pop()?.toLowerCase() || '');
-
-    return () => {
-      URL.revokeObjectURL(url);
-    };
-  }, [file]);
   const downloadPattern = () => {
     const patternText = generatePatternText(pattern);
     const blob = new Blob([patternText], { type: 'text/plain' });
@@ -71,9 +59,7 @@ export const PatternDisplay: React.FC<PatternDisplayProps> = ({ pattern, file, o
 
       <div className="pattern-content">
         {/* Yarn Preview Section */}
-        {fileUrl && fileType && (
-          <YarnPreview fileUrl={fileUrl} fileType={fileType} />
-        )}
+        <YarnPreview pattern={pattern} />
 
         {/* Materials Section */}
         <section className="pattern-section materials-section">
