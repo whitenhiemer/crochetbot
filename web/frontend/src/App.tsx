@@ -90,8 +90,8 @@ function App() {
         />
       )}
 
-      {step === 'pattern' && pattern && (
-        <PatternDisplay pattern={pattern} onReset={handleReset} />
+      {step === 'pattern' && pattern && file && (
+        <PatternDisplay pattern={pattern} file={file} onReset={handleReset} />
       )}
 
       <footer className="app-footer">
