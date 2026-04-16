@@ -11,7 +11,7 @@ RUN go mod download
 COPY . .
 
 # Build binary
-RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-w -s" -o bin/crochetbot cmd/server/main.go
+RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-w -s" -o bin/crochetbot cmd/crochetbot/main.go
 
 # Runtime stage
 FROM alpine:latest
