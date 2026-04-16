@@ -39,13 +39,58 @@ const CameraController: React.FC<{ geometry: THREE.BufferGeometry | null }> = ({
     const fov = (camera as THREE.PerspectiveCamera).fov * (Math.PI / 180);
     const cameraDistance = Math.abs(maxDim / Math.sin(fov / 2)) * 1.5;
 
-    // Position camera
-    camera.position.set(
-      center.x + cameraDistance * 0.5,
-      center.y + cameraDistance * 0.5,
-      center.z + cameraDistance
-    );
+    // Determine optimal camera position based on model orientation
+    let cameraPos = new THREE.Vector3();
 
+    // Analyze model aspect ratio to determine orientation
+    const aspectXY = size.x / size.y;
+    const aspectXZ = size.x / size.z;
+    const aspectYZ = size.y / size.z;
+
+    // Determine dominant axis and orientation
+    if (size.y > size.x && size.y > size.z && aspectYZ > 2) {
+      // Tall/vertical model (like a person standing)
+      // View from slightly elevated front-right angle
+      cameraPos.set(
+        center.x + cameraDistance * 0.6,
+        center.y + cameraDistance * 0.3,
+        center.z + cameraDistance * 0.7
+      );
+    } else if (size.z > size.x && size.z > size.y && aspectYZ < 0.5) {
+      // Deep model (extending along Z)
+      // View from elevated side angle
+      cameraPos.set(
+        center.x + cameraDistance * 0.7,
+        center.y + cameraDistance * 0.5,
+        center.z + cameraDistance * 0.5
+      );
+    } else if (size.x > size.y && size.x > size.z && aspectXY > 2) {
+      // Wide/horizontal model
+      // View from front-elevated angle
+      cameraPos.set(
+        center.x + cameraDistance * 0.3,
+        center.y + cameraDistance * 0.5,
+        center.z + cameraDistance * 0.8
+      );
+    } else if (size.y < maxDim * 0.3) {
+      // Flat/low model (like a coin or base)
+      // View from above at 45 degree angle
+      cameraPos.set(
+        center.x + cameraDistance * 0.5,
+        center.y + cameraDistance * 0.9,
+        center.z + cameraDistance * 0.5
+      );
+    } else {
+      // Roughly cubic/spherical model
+      // Classic 3/4 view angle
+      cameraPos.set(
+        center.x + cameraDistance * 0.6,
+        center.y + cameraDistance * 0.6,
+        center.z + cameraDistance * 0.6
+      );
+    }
+
+    camera.position.copy(cameraPos);
     camera.lookAt(center);
     camera.updateProjectionMatrix();
   }, [geometry, camera]);
