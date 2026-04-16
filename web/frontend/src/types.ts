@@ -31,6 +31,22 @@ export interface Pattern {
   parts: Part[];
   materials: Materials;
   assembly_instructions: string[];
+  finished_size: FinishedSize;
+  accuracy_metrics: AccuracyMetrics;
+}
+
+export interface FinishedSize {
+  height_inches: number;
+  height_cm: number;
+  width_inches: number;
+  width_cm: number;
+}
+
+export interface AccuracyMetrics {
+  shape_match_percent: number;
+  average_error: number;
+  max_error: number;
+  notes: string;
 }
 
 export interface Part {

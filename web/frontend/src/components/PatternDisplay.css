@@ -273,3 +273,96 @@
     width: 100%;
   }
 }
+
+/* Accuracy Section */
+.accuracy-section {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 2rem;
+  border-radius: 12px;
+  margin-bottom: 2rem;
+}
+
+.accuracy-section h2 {
+  color: white;
+  margin-top: 0;
+}
+
+.accuracy-info {
+  display: flex;
+  gap: 2rem;
+  align-items: center;
+}
+
+.accuracy-score {
+  flex-shrink: 0;
+}
+
+.score-circle {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.2);
+  border: 4px solid rgba(255, 255, 255, 0.5);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(10px);
+}
+
+.score-value {
+  font-size: 2rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.score-label {
+  font-size: 0.875rem;
+  opacity: 0.9;
+  margin-top: 4px;
+}
+
+.accuracy-details {
+  flex: 1;
+}
+
+.accuracy-note {
+  font-size: 1.125rem;
+  font-weight: 600;
+  margin: 0 0 1rem 0;
+}
+
+.accuracy-stats {
+  display: flex;
+  gap: 2rem;
+  margin-bottom: 1rem;
+}
+
+.stat-item {
+  font-size: 0.875rem;
+  opacity: 0.95;
+}
+
+.stat-item strong {
+  font-weight: 600;
+}
+
+.accuracy-explanation {
+  font-size: 0.875rem;
+  opacity: 0.85;
+  margin: 0;
+  font-style: italic;
+}
+
+@media (max-width: 768px) {
+  .accuracy-info {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .accuracy-stats {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+}

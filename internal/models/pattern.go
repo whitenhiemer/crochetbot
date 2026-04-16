@@ -4,14 +4,24 @@ import "time"
 
 // Pattern represents a complete crochet pattern
 type Pattern struct {
-	ID          string    `json:"id"`
-	Name        string    `json:"name"`
-	CreatedAt   time.Time `json:"created_at"`
-	Description string    `json:"description"`
-	Difficulty  string    `json:"difficulty"` // beginner, intermediate, advanced
-	Parts       []Part    `json:"parts"`
-	Materials   Materials `json:"materials"`
-	Assembly    []string  `json:"assembly_instructions"`
+	ID               string         `json:"id"`
+	Name             string         `json:"name"`
+	CreatedAt        time.Time      `json:"created_at"`
+	Description      string         `json:"description"`
+	Difficulty       string         `json:"difficulty"` // beginner, intermediate, advanced
+	Parts            []Part         `json:"parts"`
+	Materials        Materials      `json:"materials"`
+	Assembly         []string       `json:"assembly_instructions"`
+	FinishedSize     FinishedSize   `json:"finished_size"`
+	AccuracyMetrics  AccuracyMetrics `json:"accuracy_metrics"`
+}
+
+// AccuracyMetrics shows how well the pattern matches the original model
+type AccuracyMetrics struct {
+	ShapeMatchPercent float64 `json:"shape_match_percent"` // 0-100
+	AverageError      float64 `json:"average_error"`       // average radius difference
+	MaxError          float64 `json:"max_error"`           // maximum radius difference
+	Notes             string  `json:"notes"`
 }
 
 // Part represents a single piece of the amigurumi
@@ -47,6 +57,14 @@ type Materials struct {
 type Color struct {
 	Name   string `json:"name"`
 	Amount int    `json:"amount"` // yards
+}
+
+// FinishedSize represents the expected dimensions of the finished piece
+type FinishedSize struct {
+	HeightInches float64 `json:"height_inches"`
+	HeightCm     float64 `json:"height_cm"`
+	WidthInches  float64 `json:"width_inches"`
+	WidthCm      float64 `json:"width_cm"`
 }
 
 // Mesh3D represents uploaded 3D model data

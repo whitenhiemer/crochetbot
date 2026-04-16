@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Canvas, useThree } from '@react-three/fiber';
 import { OrbitControls, Center, Environment } from '@react-three/drei';
 import * as THREE from 'three';
@@ -44,7 +44,6 @@ const CameraController: React.FC<{ geometry: THREE.BufferGeometry | null }> = ({
 
     // Analyze model aspect ratio to determine orientation
     const aspectXY = size.x / size.y;
-    const aspectXZ = size.x / size.z;
     const aspectYZ = size.y / size.z;
 
     // Determine dominant axis and orientation

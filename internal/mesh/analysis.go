@@ -139,3 +139,48 @@ func (m *Mesh) EstimateVolume() float64 {
 
 	return math.Abs(volume) / 6.0
 }
+
+// GetRadiusProfile calculates average radius at different heights
+// Returns slice of radii from bottom to top
+func (m *Mesh) GetRadiusProfile(numSlices int) []float64 {
+	if len(m.Vertices) == 0 || numSlices <= 0 {
+		return []float64{}
+	}
+
+	center := m.GetCenter()
+	_, height, _ := m.GetDimensions()
+	sliceHeight := height / float64(numSlices)
+
+	radii := make([]float64, numSlices)
+	counts := make([]int, numSlices)
+
+	// For each vertex, determine which slice it belongs to and accumulate radius
+	for _, v := range m.Vertices {
+		// Height relative to bottom
+		relativeHeight := v.Y - m.Bounds.MinY
+		sliceIdx := int(relativeHeight / sliceHeight)
+		if sliceIdx >= numSlices {
+			sliceIdx = numSlices - 1
+		}
+		if sliceIdx < 0 {
+			sliceIdx = 0
+		}
+
+		// Calculate distance from center in XZ plane
+		dx := v.X - center.X
+		dz := v.Z - center.Z
+		radius := math.Sqrt(dx*dx + dz*dz)
+
+		radii[sliceIdx] += radius
+		counts[sliceIdx]++
+	}
+
+	// Average the radii
+	for i := 0; i < numSlices; i++ {
+		if counts[i] > 0 {
+			radii[i] /= float64(counts[i])
+		}
+	}
+
+	return radii
+}

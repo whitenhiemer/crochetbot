@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { Pattern } from '../types';
 import { YarnPreview } from './YarnPreview';
 import './PatternDisplay.css';
@@ -60,6 +60,50 @@ export const PatternDisplay: React.FC<PatternDisplayProps> = ({ pattern, file, o
       <div className="pattern-content">
         {/* Yarn Preview Section */}
         <YarnPreview pattern={pattern} />
+
+        {/* Accuracy Metrics */}
+        <section className="pattern-section accuracy-section">
+          <h2>Pattern Accuracy</h2>
+          <div className="accuracy-info">
+            <div className="accuracy-score">
+              <div className="score-circle">
+                <span className="score-value">{pattern.accuracy_metrics.shape_match_percent.toFixed(0)}%</span>
+                <span className="score-label">Match</span>
+              </div>
+            </div>
+            <div className="accuracy-details">
+              <p className="accuracy-note">{pattern.accuracy_metrics.notes}</p>
+              <div className="accuracy-stats">
+                <div className="stat-item">
+                  <strong>Average Error:</strong> {pattern.accuracy_metrics.average_error.toFixed(1)}%
+                </div>
+                <div className="stat-item">
+                  <strong>Max Error:</strong> {pattern.accuracy_metrics.max_error.toFixed(1)}%
+                </div>
+              </div>
+              <p className="accuracy-explanation">
+                This metric shows how closely the crochet pattern replicates the 3D model's shape.
+                Higher percentages indicate better shape accuracy.
+              </p>
+            </div>
+          </div>
+        </section>
+
+        {/* Finished Size Section */}
+        <section className="pattern-section size-section">
+          <h2>Finished Size</h2>
+          <div className="size-info">
+            <div className="size-item">
+              <strong>Height:</strong> {pattern.finished_size.height_inches}" ({pattern.finished_size.height_cm.toFixed(1)} cm)
+            </div>
+            <div className="size-item">
+              <strong>Width:</strong> {pattern.finished_size.width_inches.toFixed(1)}" ({pattern.finished_size.width_cm.toFixed(1)} cm)
+            </div>
+          </div>
+          <p className="size-note">
+            <em>Finished size may vary based on yarn weight, hook size, and individual tension.</em>
+          </p>
+        </section>
 
         {/* Materials Section */}
         <section className="pattern-section materials-section">
@@ -153,6 +197,11 @@ function generatePatternText(pattern: Pattern): string {
   text += `${'='.repeat(pattern.name.length)}\n\n`;
   text += `${pattern.description}\n`;
   text += `Difficulty: ${pattern.difficulty}\n\n`;
+
+  text += `FINISHED SIZE\n-------------\n`;
+  text += `Height: ${pattern.finished_size.height_inches}" (${pattern.finished_size.height_cm.toFixed(1)} cm)\n`;
+  text += `Width: ${pattern.finished_size.width_inches.toFixed(1)}" (${pattern.finished_size.width_cm.toFixed(1)} cm)\n`;
+  text += `Note: Finished size may vary based on yarn weight, hook size, and individual tension.\n\n`;
 
   text += `MATERIALS\n---------\n`;
   text += `- Yarn: ${pattern.materials.yarn_weight} weight, ~${pattern.materials.yarn_yardage} yards\n`;
